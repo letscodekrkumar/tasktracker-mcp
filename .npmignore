@@ -1,0 +1,10 @@
+src/
+coverage/
+docs/
+.claude/
+.gitignore
+jest.config.js
+tsconfig.json
+dist/__tests__/
+dist/benchmark.*
+dist/examples.*

@@ -1,11 +1,11 @@
 {
-  "name": "tasktracker",
+  "name": "tasktracker-mcp",
   "version": "1.0.0",
   "description": "A DAG-based task tracking MCP server for bug analysis and investigation workflows",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "tasktracker": "dist/index.js"
+    "tasktracker-mcp": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -22,10 +22,7 @@
     "type-check": "tsc --noEmit",
     "benchmark": "node dist/benchmark.js",
     "security:audit": "npm audit",
-    "security:scan": "npm run build && npm audit --audit-level=moderate",
-    "ci": "npm run type-check && npm run lint && npm run format:check && npm run test:coverage",
-    "clean": "rm -rf dist coverage",
-    "prepare": "husky install"
+    "clean": "rm -rf dist coverage"
   },
   "keywords": [
     "mcp",
@@ -34,10 +31,20 @@
     "dag",
     "bug-analysis",
     "investigation",
-    "dependency-graph"
+    "dependency-graph",
+    "claude",
+    "ai-agent"
   ],
-  "author": "TaskTracker Contributors",
+  "author": "letscodekrkumar",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/letscodekrkumar/tasktracker-mcp.git"
+  },
+  "homepage": "https://github.com/letscodekrkumar/tasktracker-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/letscodekrkumar/tasktracker-mcp/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
