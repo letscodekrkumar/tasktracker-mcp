@@ -20,12 +20,59 @@ const tracker = new TaskTracker();
 const server = new Server(
   {
     name: 'tasktracker',
-    version: '1.0.0',
+    version: '1.0.1',
   },
   {
     capabilities: {
       tools: {},
     },
+    instructions: `
+TaskTracker helps you plan and execute structured investigations using a Directed Acyclic Graph (DAG) of tasks.
+
+## Workflow
+
+1. PLAN — call add_tasks_bulk() with your full investigation plan. Define all tasks upfront, declaring dependencies between them. Each task gets an auto-assigned ID (T1, T2, T3...).
+
+2. EXECUTE — call get_ready_tasks() to see which tasks are unblocked right now (all dependencies resolved), sorted by priority. Work on those tasks in parallel or in order.
+
+3. RESOLVE — after completing a task, call update_task() with status="completed" and a finding that records what you discovered. This automatically unblocks any tasks that were waiting on it.
+
+4. REPEAT — call get_ready_tasks() again to get the next batch. Continue until all tasks are resolved.
+
+5. CONCLUDE — call conclude_analysis() when you believe all tasks are done. It will block if anything is still pending, or return a full grouped summary if everything is resolved.
+
+## Key Rules
+
+- Every resolved task (completed/skipped/blocked) REQUIRES a finding — empty findings are rejected.
+- A task can only be marked completed if all its dependencies are already resolved.
+- completed and skipped tasks are permanent — they cannot be changed.
+- blocked tasks can be reopened with reopen_task() when the blocker is resolved.
+- in_progress status does NOT unblock dependents — only resolved statuses do.
+
+## Status Meanings
+
+- pending: not started, waiting to be picked up
+- in_progress: currently being worked on
+- completed: done, finding contains the evidence
+- skipped: not needed, finding explains why
+- blocked: cannot proceed, finding describes what is missing — use reopen_task() to retry
+
+## Categories (use consistently)
+
+- log_check: fetching, searching, or parsing log files
+- config_verify: checking configuration files or settings
+- root_cause: synthesizing findings into a conclusion
+- comparison: comparing two artifacts, versions, or states
+- reproduce: attempting to reproduce the issue
+- general: anything else
+
+## Tips
+
+- Use add_tasks_bulk() for the entire plan — it validates everything atomically and rejects the whole batch if any task has an error.
+- Use add_task() only when adding a single follow-up task discovered mid-investigation.
+- Use get_all_tasks() to get a full snapshot of the DAG at any point.
+- Use reset() only when starting a completely new investigation.
+`.trim(),
   }
 );
 
@@ -37,7 +84,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'add_task',
-        description: 'Register a single new analysis task in the DAG with optional dependencies',
+        description: 'Register a single follow-up task discovered mid-investigation. Use add_tasks_bulk() instead if defining the full plan upfront.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -74,7 +121,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'add_tasks_bulk',
         description:
-          'Register the full investigation DAG in a single atomic call. Returns execution plan.',
+          'FIRST CALL: Register your entire investigation plan as a DAG in one atomic call. All tasks are validated before any are inserted. Returns a prioritised execution plan showing which tasks to start with.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -114,7 +161,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'update_task',
-        description: 'Resolve a task with evidence, update its status, or rewire its dependencies',
+        description: 'Resolve a task after completing work on it. Always provide a finding for completed/skipped/blocked. Completing a task automatically unblocks any dependents. Can also rewire dependencies (pending tasks only) or update a finding without changing status.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -143,7 +190,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'get_ready_tasks',
         description:
-          'Get all tasks ready to execute right now, sorted by priority (high → medium → low)',
+          'CALL AFTER EVERY update_task: Returns all tasks whose dependencies are fully resolved, sorted by priority (high → medium → low). These are the tasks you should work on next. Empty list means either all done or everything is blocked.',
         inputSchema: {
           type: 'object',
           properties: {},
@@ -151,7 +198,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'get_all_tasks',
-        description: 'Get complete DAG snapshot with all tasks, statuses, findings, and progress',
+        description: 'Get a full snapshot of the entire DAG — all tasks, their current status, findings, dependencies, and overall progress. Use when you need to review the full picture or check what is blocked.',
         inputSchema: {
           type: 'object',
           properties: {},
@@ -160,7 +207,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'conclude_analysis',
         description:
-          "Gate that blocks until all tasks are resolved. Returns grouped summary or tells what's still needed.",
+          'FINAL CALL: Close out the investigation. Blocks and returns actionable instructions if any tasks are still pending or in_progress. Returns a full grouped summary (by status and category) once everything is resolved. Call this when you believe all tasks are done.',
         inputSchema: {
           type: 'object',
           properties: {},
@@ -168,7 +215,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'reopen_task',
-        description: 'Reopen a blocked task when its blocker has been resolved externally',
+        description: 'Reopen a blocked task after its blocker has been resolved. Resets the task to pending, preserves the original finding in history, and recalculates its dependency state. Provide a reason explaining what changed.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -186,7 +233,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'reset',
-        description: 'Clear all tasks and start fresh (irreversible)',
+        description: 'Clear all tasks and start a new investigation session. Irreversible — all tasks and findings are permanently deleted. Only use when starting a completely new investigation.',
         inputSchema: {
           type: 'object',
           properties: {},
