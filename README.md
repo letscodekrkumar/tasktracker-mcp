@@ -12,28 +12,108 @@ A DAG-based task tracking server for bug analysis and investigation workflows, b
 - **Evidence-based resolution** — every resolved task requires a finding
 - **Analysis gate** — `conclude_analysis()` blocks until all tasks are resolved
 
+---
+
 ## Installation
 
+### Option 1 — npx (no install needed)
+
 ```bash
+npx tasktracker-mcp
+```
+
+### Option 2 — Global install
+
+```bash
+npm install -g tasktracker-mcp
+tasktracker-mcp
+```
+
+### Option 3 — From source
+
+```bash
+git clone https://github.com/letscodekrkumar/tasktracker-mcp.git
+cd tasktracker-mcp
 npm install
 npm run build
 npm start
 ```
 
-## MCP Configuration
+---
 
-Add to your MCP client (e.g., Claude Desktop):
+## MCP Server Configuration
 
+### Claude Desktop
+
+Edit `claude_desktop_config.json`:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+**Using npx (recommended):**
+```json
+{
+  "mcpServers": {
+    "tasktracker": {
+      "command": "npx",
+      "args": ["tasktracker-mcp"]
+    }
+  }
+}
+```
+
+**Using global install:**
+```json
+{
+  "mcpServers": {
+    "tasktracker": {
+      "command": "tasktracker-mcp"
+    }
+  }
+}
+```
+
+**Using local source build:**
 ```json
 {
   "mcpServers": {
     "tasktracker": {
       "command": "node",
-      "args": ["dist/index.js"]
+      "args": ["/absolute/path/to/tasktracker-mcp/dist/index.js"]
     }
   }
 }
 ```
+
+### Claude Code (CLI)
+
+```bash
+claude mcp add tasktracker npx tasktracker-mcp
+```
+
+Or with a local build:
+```bash
+claude mcp add tasktracker node /absolute/path/to/tasktracker-mcp/dist/index.js
+```
+
+Verify it connected:
+```bash
+claude mcp list
+# tasktracker: npx tasktracker-mcp - ✓ Connected
+```
+
+### Other MCP Clients
+
+Any client that supports the MCP stdio transport can use:
+
+```json
+{
+  "command": "npx",
+  "args": ["tasktracker-mcp"]
+}
+```
+
+---
 
 ## Tools
 
@@ -47,6 +127,8 @@ Add to your MCP client (e.g., Claude Desktop):
 | `conclude_analysis` | Gate that blocks until all tasks resolved; returns summary |
 | `reopen_task` | Reopen a blocked task when its blocker is resolved |
 | `reset` | Clear all tasks and start fresh |
+
+---
 
 ## Quick Start
 
@@ -73,6 +155,8 @@ update_task("T3", status="completed", finding="3 TIMEOUT errors at 14:22:01")
 conclude_analysis()
 ```
 
+---
+
 ## Task Status Transitions
 
 | Transition | Allowed | Notes |
@@ -84,6 +168,8 @@ conclude_analysis()
 | completed / skipped → any | No | Permanently resolved |
 | blocked → any | No | Use `reopen_task()` to reopen |
 
+---
+
 ## Development
 
 ```bash
@@ -91,6 +177,7 @@ npm test              # run tests
 npm run test:coverage # with coverage report
 npm run build         # compile TypeScript
 npm run dev           # build + run
+npm run benchmark     # performance benchmarks
 ```
 
 ## Project Structure
