@@ -1,6 +1,6 @@
 {
   "name": "tasktracker-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A DAG-based task tracking MCP server for bug analysis and investigation workflows",
   "main": "dist/index.js",
   "type": "module",
